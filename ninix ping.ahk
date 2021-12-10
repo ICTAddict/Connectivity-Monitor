@@ -1,10 +1,12 @@
 /*
+Based on: www.autohotkey.com/board/topic/87742-simpleping-successor-of-ping/?p=637713
 Tests internet connectivity; plays an audio file whenever the internet gets disconnected or reconnected
 Finally got it to work, plays a notification only once, every connect/disconnect until state change.
 Still needs fine tuning, because 128 seconds is a bit long to know that it's down.
-Oh, and I still need to add something to reset connection after a certain number of 'Failed Pings'. Done!
+
 Latest change (Circa Oct, 2019) reset the connection via telnet when disconnected, but only do it once until the next time it disconnects.
 Script path
+**** Make sure not to exceed the API limit as stated here: https://myexternalip.com ****
 
 To Do:
 1-Gui (showing Current IP, last disconnect, last reconnect, Connection uptime)
@@ -12,6 +14,9 @@ To Do:
 3-Maybe log that information to the Excel file, but that's too difficult
 4-
 
+Problems:
+1- If the DNS request fails (or the WinHttp.WinHttpRequest?), the script will display two error messages back to back requiring user interaction in order to continue running the script.
+Error:  0x80072EE2 and Error:  0x8000000A
 */
 
 #NoEnv
@@ -26,13 +31,13 @@ SetKeyDelay, 0
 SetControlDelay -1
 count:=0  ; Number of successful pings
 Fcount:=0 ; Number of failed pings
-sl:=1000  ; Waiting between...
+sl:=1000  ; Waiting between pings, increases with every successful ping and gets reset when the ping fails.
 IniRead, Target, settings.ini, setup, TargetIP
 ;N:=1 ;can't find that variable anywhere in the script.
 If(Ping("%Target%")) ;To avoid startup connection report. 
 	count:=3
 IP:= WhatIsMyIP()
-IniRead, CurrentIP, settings.ini, history, StoredIP
+IniRead, CurrentIP, settings.ini, history, StoredIP ; You (may or may not) need to write your IP in settings.ini the first time you use the script
 if (currentIP=IP)
 	MsgBox, 0, Ninix Ping, No change in IP`nCurrent IP: %IP%, 5
 else
@@ -71,7 +76,7 @@ loop,
 %time%`t`t Connection restored
 Current IP Address: %IP%
 
-), E:\Africano\Programs\Lan programs\Logs\Internet connection log.txt ; No size limit
+), %A_ScriptDir%\Internet connection log.txt ; No size limit
 				if (CurrentIP != IP)
 				{
 					;calculating how long the internet has been disconnected
@@ -94,11 +99,10 @@ Current IP Address: %IP%
  		{
 	 		sl+=sl ;increases sleep duration all the way to (32 second)
 	 	}
-
 		
 		count++
 	}
-	Else												; Ping Failed
+	Else	; Ping Failed
 	{
 		Fcount++
 		if (Fcount=4) ; 'Fcount>1' was causing it to execute every single time. orig: Fcount=2. Tied to line 48 in if (Ping()), be mindful of that.
@@ -122,7 +126,7 @@ Current IP Address: %IP%
 		{
 			soundplay, %A_scriptDir%\rebooting router.wav
 			Sleep, 1000
-			MsgBox, 257, Reboot Router?, Actually`, just resetting connection., 2 ;OK,Cancel - default 2nd.
+			MsgBox, 257, Reboot Router?, Actually`, just resetting ADSL connection., 2 ;OK,Cancel - default 2nd.
 			ifmsgbox, cancel
 			{}
 			ifmsgbox, Timeout
