@@ -95,9 +95,9 @@ Current IP Address: %IP%
 			}
 		}
 		;Probably commented out to reset the connection quickly during noise spikes.
- 		If (count<=1)
+ 		If (count<=5)
  		{
-	 		sl+=sl ;increases sleep duration all the way to (32 second)
+	 		sl+=sl ;increases sleep duration between SUCCESSFUL pings all the way to (32 second)
 	 	}
 		
 		count++
